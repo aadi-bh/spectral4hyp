@@ -1,3 +1,5 @@
+import numpy as np
+
 def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
     y = y0
     t, tfinal = tinterval
