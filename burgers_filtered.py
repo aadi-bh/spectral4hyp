@@ -87,7 +87,7 @@ def semigroup_heat(dt, k, eps):
 a = 1
 initial_condition = sin
 rhs = burgers
-visc = zero; #semigroup_heat
+visc = semigroup_heat
 USE_FILTER = True
 tf = 0.9
 dt = 0.1
