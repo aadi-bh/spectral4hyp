@@ -80,7 +80,7 @@ def burgers(t, u_hat, N, M, filter, a=1):
     kk = freqs(NN)
     nonlinear = -1 * fft(u**2/2) * 1j * kk
     nonlinear *= a
-#    nonlinear *= filter
+    nonlinear *= filter
     return unpad(mask(nonlinear), M//2)
 def semigroup_heat(dt, k, eps):
     S_half = sparse.diags(np.exp(-1 * eps * k**2 * dt / 2))
@@ -104,7 +104,7 @@ ax[0].plot(x, initial_condition(x), linewidth=0.1, color='k', label="init")
 fig.tight_layout()
 god = np.loadtxt("burg3_GOD_3.txt").transpose()
 # ax[0].plot(god[0] * 2 * np.pi, god[1], 'ko', markersize=0.1, label="Godunov flux")
-for i in range(6):
+for i in range(8):
     N = np.power(2, i + 4);
     M = 3 * N // 2;
     NN = (2 * M//2) + N

@@ -2,7 +2,7 @@ import numpy as np
 
 def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
     y = y0
-    t, tfinal = tinterval
+    t, tf = tinterval
     time = [t,]
     solution = [y,]
     flag = True
@@ -48,14 +48,14 @@ def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
         # solution.append(y)
         
         time.append(t)
-        if t + dt > tfinal:
-            dt = tfinal - t
-        elif (t >= tfinal):
+        if t + dt > tf:
+            dt = tf - t
+        elif (t >= tf):
             flag = False
         elif np.any(np.isnan(y)):
             flag = False
         print("t, dt = ", t, dt)
 
     times = np.array(time)
-#   solutions = np.array(solution)
+    solution.append(y)
     return times, solution
