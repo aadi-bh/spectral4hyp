@@ -36,7 +36,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run
       run: |
-        bash generate_plots.sh
+        ./generate_plots.sh
 
     - name: Upload GitHub Pages artifact
       uses: actions/upload-pages-artifact@v2.0.0
