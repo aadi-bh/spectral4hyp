@@ -17,7 +17,8 @@ xmin = 0
 xmax = 2 * pi
 
 def saw_tooth(x):
-    return np.where(x < pi, x / pi, 2 - x / pi)
+    left = np.where(x <= pi, 1, 0);
+    return x * left + (x - 2 * pi) * (1-left)
 def sin(x):
     return np.sin(x)
 def step(x):
@@ -61,73 +62,90 @@ def create_filter(k, sigma, args):
     return filter
 def no_filter(k, sigma, args):
     return np.ones(len(kk))
-def zero(u_hat, N, M, eps, filter, a=1):
+def zero(t, u_hat, N, M, eps, filter, a=1):
     return np.zeros(len(u_hat));
-def linadv(u_hat, N, M, filter, a=1): 
-    u_hat = pad(u_hat, M//2) * NN / N # because fft scales these, and we want the ifft to work as usual
+def linadv(t, u_hat, N, M, filter, a=1): 
+    # because fft scales these, and we want the ifft to work as usual
+    NN = (2 * M//2) + N
+    u_hat = pad(u_hat, M//2) * NN / N 
     kk = freqs(NN)
     nonlinear = -1j * kk * u_hat
     nonlinear *= a
     nonlinear *= filter
     return unpad(mask(nonlinear), M//2)
-def burgers(u_hat, N, M, filter, a=1):
+def burgers(t, u_hat, N, M, filter, a=1):
     # because fft scales these, and we want the ifft to work as usual
     u_hat = pad(u_hat, M//2) * NN / N
     u = ifft(u_hat)
     kk = freqs(NN)
     nonlinear = -1 * fft(u**2/2) * 1j * kk
     nonlinear *= a
-    nonlinear *= filter
+#    nonlinear *= filter
     return unpad(mask(nonlinear), M//2)
 def semigroup_heat(dt, k, eps):
     S_half = sparse.diags(np.exp(-1 * eps * k**2 * dt / 2))
     S = sparse.diags(np.exp(-1 * eps * k**2 * dt))
     return S_half, S
+def semigroup_none(dt, k, eps):
+    S = sparse.diags(np.ones(len(k)))
+    S_half = S
+    return S_half, S
 
-a = 1
-initial_condition = sin
-rhs = burgers
-visc = semigroup_heat
-USE_FILTER = True
-tf = 0.9
-dt = 0.1
-# fig, axs = plt.subplots(nrows = 9, ncols = 2, figsize = (10, 2 * 9), width_ratios=[3,1])
+a = 2 * pi
+initial_condition = saw_tooth
+rhs = linadv
+visc = semigroup_none
+USE_FILTER = False
+tf = 2
+dt = 0.01
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 10), width_ratios=[3,1])
+x = np.linspace(xmin, xmax, 1000)
+ax[0].plot(x, initial_condition(x), linewidth=0.1, color='k', label="init")
 fig.tight_layout()
-for i in range(9):
+god = np.loadtxt("burg3_GOD_3.txt").transpose()
+# ax[0].plot(god[0] * 2 * np.pi, god[1], 'ko', markersize=0.1, label="Godunov flux")
+for i in range(6):
     N = np.power(2, i + 4);
     M = 3 * N // 2;
     NN = (2 * M//2) + N
     m = M // 2;
     dx = (xmax-xmin) / N
+    dt = min(dt, 0.01 * dx)
     x = np.arange(xmin, xmax, dx)
     k = freqs(N)
     kk = freqs(NN)
     filter = np.ones(len(kk))
-    p = i
+    p = 5
     if USE_FILTER == True:
         filter = create_filter(kk, sigma, {'p':p})
-    args = (N, M, filter)
+    args = (N, M, filter, a)
     u_hat_init = fft(initial_condition(x))
-#    output = solve_ivp(semigroup_heat, rhs, [0, tf], u_hat_init, t_eval=np.linspace(0, tf, 1+int(tf/dt)), args=args)
-    S_half, S = visc(dt, k, eps = 1e-1)
+    S_half, S = visc(dt, k, eps = 1e-2)
+    '''
+    output = solve_ivp(fun = rhs,
+                         t_span = [0, tf],
+                         t_eval = [0, tf],
+                         y0 = u_hat_init,
+                         args = args)
+    times, u = output.t, output.y.transpose()
+    '''
     times, u = elrk4([S_half, S], rhs, u_hat_init, (0, tf), dt, args)
-#    print(output['message'])
-#    u = output['y'].transpose()
-#    times = output['t']
-#    axs[i][0].plot(x, ifft(u[-1]).real, label=str(N))
-#    axs[i][0].legend()
     ax[0].plot(x, ifft(u[-1]).real, label=str(N)+f", t={np.round(times[-1], 3)}")
     ax[0].legend()
-#    plot_resolution(u[-1], axs[i][1])
     plot_resolution(u[-1], ax[1], {'linewidth':0.1, 'markersize':0.1})
-
-    f, a = plt.subplots(ncols=2,nrows=len(times),figsize=(10, 2 * len(times)),width_ratios=[3,1])
+    '''
+    nr = 11
+    f, a = plt.subplots(ncols=2, nrows = nr,
+                        figsize=(10, 2 * nr),width_ratios=[3,1])
     f.tight_layout()
-    for j in range(len(times)):
-        a[j][0].plot(x, ifft(u[j]).real, label=str(np.round(times[j], 3)))
-        a[j][0].legend()
-        plot_resolution(u[j], a[j][1], {'color':'k', 'linewidth':0.1, 'markersize':0.1})
-    np.savetxt(f"{N}.txt", u[-1].real)
+    for k in range(nr):
+        j = int(np.linspace(0, len(times), nr, endpoint=True)[k])
+        print(j)
+        a[k][0].plot(x, ifft(u[j]).real, label=str(np.round(times[j], 3)))
+        a[k][0].legend()
+        plot_resolution(u[j], a[k][1], {'color':'k', 'linewidth':0.1, 'markersize':0.1})
     f.savefig(f"{N}-f{USE_FILTER}-f{str(p)}.png")
-fig.savefig(f"out-f{str(USE_FILTER)}-f{str(p)}.png")
+    '''
+    np.savetxt(f"{N}.txt", np.vstack((k, u[-1].real)))
+fig.savefig(f"f{rhs}-f{str(USE_FILTER)}-f{str(p)}.png")
+plt.close()

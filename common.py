@@ -18,18 +18,19 @@ def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
         return None
     
     while flag==True:
-        k1 = dt*Nonlinear(y,*args)
+        t = t + dt
+        k1 = dt*Nonlinear(t, y,*args)
         temp = y + k1/2.0
         temp = S_half.dot(temp)
         
-        k2 = dt*Nonlinear(temp,*args)
+        k2 = dt*Nonlinear(t, temp,*args)
         temp = S_half.dot(y) + k2/2.0
         
-        k3 = dt*Nonlinear(temp,*args)
+        k3 = dt*Nonlinear(t, temp,*args)
         temp = S.dot(y)
         temp = temp + S_half.dot(k3)
         
-        k4 = dt*Nonlinear(temp,*args)
+        k4 = dt*Nonlinear(t, temp,*args)
         temp1 = k4
         
         temp2 = S_half.dot(k3)*2
@@ -44,15 +45,16 @@ def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
         temp = S.dot(y)
         
         y = temp + temp1/6.0
-        solution.append(y)
+        # solution.append(y)
         
-        t = t + dt
         time.append(t)
-        
-        if abs(t-tfinal)<dt/10:
+        if t + dt > tfinal:
+            dt = tfinal - t
+        elif (t >= tfinal):
             flag = False
         elif np.any(np.isnan(y)):
             flag = False
+        print("t, dt = ", t, dt)
 
     times = np.array(time)
 #   solutions = np.array(solution)
