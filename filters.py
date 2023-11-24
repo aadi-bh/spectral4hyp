@@ -3,16 +3,21 @@
 import numpy as np
 
 def exponential(eta, p=1):
-    return np.exp(-35* np.power(eta, 2*p))
+    return np.exp(-35 * np.power(eta, 2*p))
 
-def cesaro(eta):
-    return 1 - eta
+def cesaro(eta, **kwargs):
+    r = 1 - np.abs(eta)
+    r *= np.where(np.abs(eta) > 1, 0, 1)
+    return r
 
-def raisedcos(eta):
-    return 0.5 * (1 + np.cos(np.pi * eta))
+def raisedcos(eta, **kwargs):
+    r = 0.5 * (1 + np.cos(np.pi * eta))
+    r *= np.where(np.abs(eta) > 1, 0, 1)
+    return r
 
-def lanczos(eta):
-    return np.sin(np.pi * eta) / (np.pi * eta)
+def lanczos(eta, **kwargs):
+    r = np.sinc(np.pi * eta)
+    return r
 
-def no_filter(eta):
-    return 1.0
+def no_filter(eta, **kwargs):
+    return np.ones(len(eta))

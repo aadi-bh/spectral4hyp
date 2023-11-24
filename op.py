@@ -6,26 +6,8 @@ from scipy import sparse
 from numpy import pi
 from common import *
 
-def pad(c, m):
-    # ASSUME c is fft(u) / len(u)
-    N = len(c)
-    newN = 2*m + N
-    r = fftshift(c)
-    r = np.r_[np.zeros(m), r, np.zeros(m)]
-    r *= newN / N
-    r = ifftshift(r)
-    return r
 
-def unpad(c, m):
-    N = len(c)
-    newN = N - 2 * m
-    r = fftshift(c)
-    r = r[m:m + newN]
-    r *= newN / N
-    r = ifftshift(r)
-    return r
-
-def linadv(t, u_hat, N, M, filter, a=1): 
+def linadv(t, u_hat, N, M, filter, a= 2 * pi): 
     NN = (2 * M//2) + N
     u_hat = pad(u_hat, M//2)
     kk = freqs(NN)

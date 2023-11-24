@@ -74,5 +74,28 @@ def plot_resolution(c, ax, kwargs):
     ax.semilogy(k, np.abs(fftshift(c)), **kwargs)
     return
 
+def pad(c, m):
+    # ASSUME c is fft(u) 
+    N = len(c)
+    newN = 2*m + N
+    r = fftshift(c)
+    r = np.r_[np.zeros(m), r, np.zeros(m)]
+    r *= newN / N
+    r = ifftshift(r)
+    return r
+
+def unpad(c, m):
+    N = len(c)
+    newN = N - 2 * m
+    r = fftshift(c)
+    r = r[m:m + newN]
+    r *= newN / N
+    r = ifftshift(r)
+    return r
+
 def freqs(n):
     return fftfreq(n, 1./ (n))
+
+def cgrid(n, xmin=0, xmax=2*np.pi):
+    dx = (xmax - xmin) / n
+    return 0.5 * dx + np.arange(xmin, xmax, dx)

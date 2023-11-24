@@ -29,7 +29,8 @@ parser.add_argument('--ic',
 parser.add_argument('--Tf', type=float, help='Final time', default=1.0)
 parser.add_argument('--pde', choices=('linadv', 'burgers'), default='burgers')
 parser.add_argument('--add_visc', type=bool, default=False)
-parser.add_argument('--use_filter', type=bool, default=False)
+parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos'), default='no_filter')
+parser.add_argument('--filterp', type=int, default=1)
 parser.add_argument('--max_lgN', type=int, default=7)
 parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
 args = parser.parse_args()
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     rhs = op.linadv
     initial_condition = ic.sin
     visc = op.semigroup_none
-    USE_FILTER = False
+    sigma = filters.no_filter
     tf = 2
     cfl = 0.5
     if args.pde == 'burgers':
@@ -51,35 +52,44 @@ if __name__ == '__main__':
         initial_condition = ic.step
     elif args.ic == 'bump':
         initial_condition = ic.bump
+    if args.filter == 'no_filter':
+        sigma = filters.no_filter;
+    elif args.filter == 'exponential':
+        sigma = filters.exponential
+    elif args.filter == 'cesaro':
+        sigma = filters.cesaro
+    elif args.filter == 'raisedcos':
+        sigma = filters.raisedcos
+    elif args.filter == 'lanczos':
+        sigma = filters.lanczos
     if args.add_visc == True:
         visc = op.semigroup_heat
     tf = max(0, args.Tf)
     cfl = min(1, args.cfl)
-    USE_FILTER = args.use_filter
 
     print("PDE   :", args.pde)
     print("TF    :", tf)
     print("CFL   :", cfl)
     print("IC    :", args.ic)
-    print("FILTER:", args.use_filter)
+    print("FILTER:", args.filter)
     print("VISC  :", args.add_visc)
-
+    plotname = f"{args.pde}-visc{str(args.add_visc)}-{tf}-{args.ic}-{args.filter}.png"
     sols = []
     for i in range(0, args.max_lgN - 4 + 1):
         N = np.power(2, i + 4);
+        N = 64
         print(f"N={N}")
         M = 3 * N // 2;
         m = M // 2;
         NN = (2 * m) + N
         dx = (xmax-xmin) / N
         dt = (cfl * dx)
-        x = np.arange(xmin, xmax, dx)
+        x = cgrid(N)
         k = freqs(N)
         kk = freqs(NN)
         filter = np.ones(len(kk))
         p = i 
-        if USE_FILTER == True:
-            filter = create_filter(kk, sigma, {'p':p})
+        filter = create_filter(kk, sigma, {'p':p})
         args = (N, M, filter)
         u_hat_init = fft(initial_condition(x))
         S_half, S = visc(dt, k, eps = 1e-2)
@@ -97,6 +107,8 @@ if __name__ == '__main__':
         filename = f"{N}.txt"
         np.savetxt(filename, np.vstack((k, u[-1].real)))
         print("Saved solution to " + filename)
+        print("Breaking for debug")
+        break
 
     # PLOT
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[3,1])
@@ -107,18 +119,27 @@ if __name__ == '__main__':
             god = np.loadtxt("burg3_GOD_3.txt").transpose()
         elif tf == 0.2:
             god = np.loadtxt("burg3_GOD_1.txt").transpose()
-        ax[0].plot(god[0] * 2 * np.pi, god[1], 'ko', markersize=0.1, label="Godunov flux")
+        ax[0].plot(god[0] * 2 * np.pi, god[1], 'ko', markersize=0.8, label="Godunov flux")
 
     fig.tight_layout()
+    nn = 2048
+#    x = np.linspace(xmin, xmax, 2048, endpoint=False)
     for (times, u) in sols:
-        ax[0].plot(x, ifft(u[-1]).real, label=str(N)+f", t={np.round(times[-1], 3)}")
-        plot_resolution(u[-1], ax[1], {'linewidth':0.5, 'markersize':0.5})
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[3,1])
+        v = u[-1]
+        t = times[-1]
+        n = len(v)
+        dx = (xmax - xmin) / n
+        y = np.arange(xmin, xmax, dx) + 0.5 * dx
+#        y = np.linspace(xmin, xmax, len(v), endpoint=False)
+        ax[0].plot(y, ifft(v).real, label=str(n)+f", t={np.round(t, 3)}")
+        plot_resolution(v, ax[1], {'linewidth':0.5, 'markersize':0.5})
+        w = pad(v, (nn - n)//2)
+        z = np.linspace(dx/2, xmax - dx/2, 2048)
+        ax[0].plot(z, ifft(w).real, label=str(n))
     x = np.linspace(xmin, xmax, 1000)
     ax[0].plot(x, initial_condition(x), linewidth=0.1, color='k', label="init")
     ax[0].legend()
-    fig.savefig(f"{rhs}-{str(USE_FILTER)}.png")
+    fig.savefig(plotname)
 
     plt.close()
     print("Done.")
-

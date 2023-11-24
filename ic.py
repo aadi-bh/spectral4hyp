@@ -1,5 +1,6 @@
 # Initial conditions
 import numpy as np
+from numpy import pi
 
 def saw_tooth(x):
     left = np.where(x <= pi, 1, 0);
