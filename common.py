@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.fft import *
 
 def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
     y = y0
@@ -54,8 +55,24 @@ def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
             flag = False
         elif np.any(np.isnan(y)):
             flag = False
-#        print("t, dt = ", t, dt)
+        print("t, dt = ", t, dt)
 
     times = np.array(time)
     solution.append(y)
     return times, solution
+
+def create_filter(k, sigma, args):
+    K = np.max(np.abs(k))
+    filter = sigma(k / K, **args)
+    return filter
+
+def mask(c, tol=1e-14):
+    return c * np.where(np.abs(c)<tol, 0, 1)
+
+def plot_resolution(c, ax, kwargs):
+    k = fftshift(freqs(len(c)))
+    ax.semilogy(k, np.abs(fftshift(c)), **kwargs)
+    return
+
+def freqs(n):
+    return fftfreq(n, 1./ (n))
