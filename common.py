@@ -54,7 +54,7 @@ def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
             flag = False
         elif np.any(np.isnan(y)):
             flag = False
-        print("t, dt = ", t, dt)
+#        print("t, dt = ", t, dt)
 
     times = np.array(time)
     solution.append(y)
