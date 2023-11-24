@@ -90,7 +90,7 @@ def unpad(c, m):
     return r
 
 def freqs(n):
-    return fftfreq(n, 1./ (n))
+    return fftfreq(n, 1.0/n)
 
 def cgrid(n, xmin=0, xmax=2*np.pi):
     dx = (xmax - xmin) / n

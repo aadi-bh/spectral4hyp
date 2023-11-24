@@ -87,10 +87,9 @@ if __name__ == '__main__':
         x = cgrid(N)
         k = freqs(N)
         kk = freqs(NN)
-        p = 0
-        args = (N, M)
+        p = 2
+        args = (N, M, create_filter(kk, sigma, p=p))
         u_hat_init = fft(initial_condition(x)) 
-        S_half, S = visc(dt, k, eps = 1e-2)
 
         times = [0]
         u = [u_hat_init]
@@ -102,6 +101,7 @@ if __name__ == '__main__':
                              args = args)
             print(output.message)
             times, u = output.t, output.y.transpose()
+        # S_half, S = visc(dt, k, eps = 1e-2)
         # times, u = elrk4([S_half, S], rhs, u_hat_init, (0, tf), dt, args)
 
         ## Apply filter
