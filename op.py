@@ -7,23 +7,21 @@ from numpy import pi
 from common import *
 
 
-def linadv(t, u_hat, N, M, filter, a= 2 * pi): 
+def linadv(t, u_hat, N, M, a= 2 * pi): 
     NN = (2 * M//2) + N
     u_hat = pad(u_hat, M//2)
     kk = freqs(NN)
     nonlinear = -1j * kk * u_hat
     nonlinear *= a
-    nonlinear *= filter
     return unpad(mask(nonlinear), M//2)
 
-def burgers(t, u_hat, N, M, filter, a=1):
+def burgers(t, u_hat, N, M, a=1):
     NN = (2 * M//2) + N
     u_hat = pad(u_hat, M//2)
     u = ifft(u_hat)
     kk = freqs(NN)
     nonlinear = -1 * fft(u**2/2) * 1j * kk
     nonlinear *= a
-    nonlinear *= filter
     return unpad(mask(nonlinear), M//2)
 
 def semigroup_heat(dt, k, eps):

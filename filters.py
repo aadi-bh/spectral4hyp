@@ -2,8 +2,8 @@
 
 import numpy as np
 
-def exponential(eta, p=1):
-    return np.exp(-35 * np.power(eta, 2*p))
+def exponential(eta, p=2):
+    return np.exp(-15 * np.power(eta, 2*p))
 
 def cesaro(eta, **kwargs):
     r = 1 - np.abs(eta)

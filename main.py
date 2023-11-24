@@ -13,6 +13,7 @@ from common import *
 import ic
 import op
 import filters
+import plots
 
 
 xmin, xmax = 0, 2 * pi
@@ -77,7 +78,6 @@ if __name__ == '__main__':
     sols = []
     for i in range(0, args.max_lgN - 4 + 1):
         N = np.power(2, i + 4);
-        N = 64
         print(f"N={N}")
         M = 3 * N // 2;
         m = M // 2;
@@ -87,28 +87,31 @@ if __name__ == '__main__':
         x = cgrid(N)
         k = freqs(N)
         kk = freqs(NN)
-        filter = np.ones(len(kk))
-        p = i 
-        filter = create_filter(kk, sigma, {'p':p})
-        args = (N, M, filter)
-        u_hat_init = fft(initial_condition(x))
+        p = 0
+        args = (N, M)
+        u_hat_init = fft(initial_condition(x)) 
         S_half, S = visc(dt, k, eps = 1e-2)
-        '''
-        output = solve_ivp(fun = rhs,
+
+        times = [0]
+        u = [u_hat_init]
+        if (tf > 0):
+            output = solve_ivp(fun = rhs,
                              t_span = [0, tf],
                              t_eval = [0, tf],
                              y0 = u_hat_init,
                              args = args)
-        times, u = output.t, output.y.transpose()
-        '''
-        times, u = elrk4([S_half, S], rhs, u_hat_init, (0, tf), dt, args)
+            print(output.message)
+            times, u = output.t, output.y.transpose()
+        # times, u = elrk4([S_half, S], rhs, u_hat_init, (0, tf), dt, args)
+
+        ## Apply filter
+        u *= create_filter(k, sigma, p=p)
+
         sols.append((times, u))
 
         filename = f"{N}.txt"
         np.savetxt(filename, np.vstack((k, u[-1].real)))
         print("Saved solution to " + filename)
-        print("Breaking for debug")
-        break
 
     # PLOT
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[3,1])
@@ -122,22 +125,20 @@ if __name__ == '__main__':
         ax[0].plot(god[0] * 2 * np.pi, god[1], 'ko', markersize=0.8, label="Godunov flux")
 
     fig.tight_layout()
+    ax[0].grid(visible=True)
     nn = 2048
 #    x = np.linspace(xmin, xmax, 2048, endpoint=False)
     for (times, u) in sols:
         v = u[-1]
         t = times[-1]
         n = len(v)
-        dx = (xmax - xmin) / n
-        y = np.arange(xmin, xmax, dx) + 0.5 * dx
-#        y = np.linspace(xmin, xmax, len(v), endpoint=False)
-        ax[0].plot(y, ifft(v).real, label=str(n)+f", t={np.round(t, 3)}")
-        plot_resolution(v, ax[1], {'linewidth':0.5, 'markersize':0.5})
-        w = pad(v, (nn - n)//2)
-        z = np.linspace(dx/2, xmax - dx/2, 2048)
-        ax[0].plot(z, ifft(w).real, label=str(n))
+        # ax[0].plot(cgrid(n), ifft(v).real, "+", color= "red", markersize=4)
+        plots.smoothplot(v, ax[0], label=str(n)+f", t={np.round(t, 3)}", linewidth=1)
+        plots.plot_resolution(v, ax[1], linewidth=0.5, markersize=0.5)
+
     x = np.linspace(xmin, xmax, 1000)
-    ax[0].plot(x, initial_condition(x), linewidth=0.1, color='k', label="init")
+    ax[0].plot(x, initial_condition(x), linewidth=1, color='k', label="init")
+
     ax[0].legend()
     fig.savefig(plotname)
 

@@ -3,7 +3,7 @@ import numpy as np
 from numpy import pi
 
 def saw_tooth(x):
-    left = np.where(x <= pi, 1, 0);
+    left = np.where(x < pi, 1, 0);
     return x * left + (x - 2 * pi) * (1-left)
 
 def sin(x):

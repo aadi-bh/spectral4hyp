@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 import os
 from past.builtins import execfile
 
-print("Running burgers_filtered")
-execfile("burgers_filtered.py")
+execfile('plots.py')
 for f in os.listdir("."):
     if f.endswith(".png" or ".svg"):
         os.rename(f, "_site/plots/"+f)
