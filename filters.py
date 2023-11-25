@@ -21,3 +21,9 @@ def lanczos(eta, **kwargs):
 
 def no_filter(eta, **kwargs):
     return np.ones(len(eta))
+
+def apply_filter(u, sigma, **args):
+    N = len(u)
+    k = freqs(N)
+    filter = create_filter(k, sigma, **args)
+    return mask(u * filter)

@@ -20,30 +20,31 @@ import ggb
 xmin, xmax = 0, 2 * pi
 
 parser = argparse.ArgumentParser()
-# parser.add_argument('-N', type=int, help='Number of cells', default=100)
+parser.add_argument('-N', type=int, help='Number of cells', action='append')
 parser.add_argument('--cfl', type=float, help='CFL number', default=0.1)
 # parser.add_argument('-scheme',
 #                     choices=('C','LF','GLF','LLF','LW','ROE','EROE','GOD'),
 #                     help='Scheme', default='LF')
 parser.add_argument('--ic',
                     choices=('saw_tooth','sin','step', 'bump'),
-                    help='Initial condition', default='sin')
-parser.add_argument('--Tf', type=float, help='Final time', default=1.0)
-parser.add_argument('--pde', choices=('linadv', 'burgers'), default='burgers')
-parser.add_argument('--add_visc', type=bool, default=False)
-parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos'), default='no_filter')
-parser.add_argument('--filterp', type=int, default=1)
-parser.add_argument('---ggb', type=bool, default=False)
-parser.add_argument('--ggbL', type=int, default=5)
-parser.add_argument('--max_lgN', type=int, default=7)
+                    default='sin', help = "Initial condition")
+parser.add_argument('--Tf', type=float, default=1.0, help = "Final time")
+parser.add_argument('--pde', choices=('linadv', 'burgers'), default='burgers', help = "PDE to solve")
+# parser.add_argument('--add_visc', type=bool, default=False)
+parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos'), default='no_filter', help = "Which filter, if any")
+# parser.add_argument('--filterp', type=int, default=1, "p value for the exponential")
+parser.add_argument('--ggb', type=bool, default=False, help = "Whether to reconstruct the analytic part of the solution")
+parser.add_argument('-L', type=int, default=3, help = "Number of elements in the GGB basis")
+# parser.add_argument('--max_lgN', type=int, default=7, help = "Largest power of 2 to calculate until")
 #parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
-parser.add_argument('--show_markers', type=bool, default=False)
+parser.add_argument('--show_markers', type=bool, default=False, help = "Show the original sample values in red crosses")
+parser.add_argument('--exact', type=str, default=None, help = "Exact solution file")
 args = parser.parse_args()
 
 if __name__ == '__main__':
     rhs = op.linadv
     initial_condition = ic.sin
-    visc = op.semigroup_none
+#    visc = op.semigroup_none
     sigma = filters.no_filter
     tf = 2
     cfl = 0.5
@@ -67,95 +68,105 @@ if __name__ == '__main__':
         sigma = filters.raisedcos
     elif args.filter == 'lanczos':
         sigma = filters.lanczos
-    if args.add_visc == True:
-        visc = op.semigroup_heat
-    tf = max(0, args.Tf)
+#    if args.add_visc == True:
+#        visc = op.semigroup_heat
+    tf  = max(0, args.Tf)
     cfl = min(1, args.cfl)
-    show_markers = args.show_markers
 
+    plotname = f"{args.pde}-{tf}-{args.ic}-{args.filter}-g{args.ggb}.png"
     print("PDE   :", args.pde)
     print("TF    :", tf)
     print("CFL   :", cfl)
     print("IC    :", args.ic)
     print("FILTER:", args.filter)
-    print("VISC  :", args.add_visc)
-    plotname = f"{args.pde}-visc{str(args.add_visc)}-{tf}-{args.ic}-{args.filter}.png"
+    print("FILE  :", plotname)
+#    print("VISC  :", args.add_visc)
+#    plotname = f"{args.pde}-visc{str(args.add_visc)}-{tf}-{args.ic}-{args.filter}.png"
     sols = []
-    for i in range(0, args.max_lgN - 4 + 1):
-        N = np.power(2, i + 4);
-        print(f"N={N}")
+    for N in args.N:
         M = 3 * N // 2;
         m = M // 2;
         NN = (2 * m) + N
         dx = (xmax-xmin) / N
         dt = (cfl * dx)
         x = cgrid(N)
-        k = freqs(N)
-        kk = freqs(NN)
+        k, kk = freqs(N), freqs(NN)
         p = 2
-        args = (N, M, create_filter(kk, sigma, p=p))
+        print(f"N={N}")
+        arguments = (N, M, create_filter(kk, sigma, p=p))
         u_hat_init = fft(initial_condition(x)) 
 
         times = [0]
-        u = [u_hat_init]
+        us = [u_hat_init]
         if (tf > 0):
             output = solve_ivp(fun = rhs,
                              t_span = [0, tf],
                              t_eval = [0, tf],
                              y0 = u_hat_init,
-                             args = args)
+                             args = arguments)
             print(output.message)
-            times, u = output.t, output.y.transpose()
-        # S_half, S = visc(dt, k, eps = 1e-2)
-        # times, u = elrk4([S_half, S], rhs, u_hat_init, (0, tf), dt, args)
+            times, us = output.t, output.y.transpose()
 
-        ## Apply filter
-        u *= create_filter(k, sigma, p=p)
-
-        sols.append((times, u))
-
+        # Postprocessing!
+        # Apply whatever filter was chosen.
+        uh = us[-1]
+        uf = uh * create_filter(k, sigma, p = p)
+        v = ifft(uf).real
+        # Gegenbauer reconstruction
+        if args.ggb:
+            # Conveniently for us, the shock stays put at pi
+            left = np.where(x < pi, True, False)
+            right = np.where(x > pi, True, False)
+            ggbleft = ggb.recon_fft(x[left], uf, args.L)
+            ggbright = ggb.recon_fft(x[right], uf, args.L)
+            v[left] = ggbleft
+            v[right] = ggbright
+        sols.append((times[-1], uf, v))
         filename = f"{N}.txt"
-        np.savetxt(filename, np.vstack((k, u[-1].real)))
+        np.savetxt(filename, np.vstack((x, us[-1], v)))
         print("Saved solution to " + filename)
 
     # PLOT
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[3,1])
-    if rhs == op.burgers and initial_condition == ic.sin:
-        if tf >= 1 or True:
-            god = np.loadtxt("burg3_GOD_5.txt").transpose()
-        elif tf == 0.6:
-            god = np.loadtxt("burg3_GOD_3.txt").transpose()
-        elif tf == 0.2:
-            god = np.loadtxt("burg3_GOD_1.txt").transpose()
-        ax[0].plot(god[0] * 2 * np.pi, god[1], 'ko', markersize=0.8, label="Godunov flux")
-
-    fig.tight_layout()
-    ax[0].grid(visible=True)
     nn = 2048
-#    x = np.linspace(xmin, xmax, 2048, endpoint=False)
-    for (times, u) in sols:
-        v = u[-1]
-        t = times[-1]
-        n = len(v)
-        if show_markers:
-            ax[0].plot(cgrid(n), ifft(v).real, "+", color= "red", markersize=5)
-        plots.smoothplot(v, ax[0], label=str(n)+f", t={np.round(t, 3)}", linewidth=1)
-        plots.plot_resolution(v, ax[1], linewidth=0.5, markersize=0.5)
-
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[3,1])
+    # Initial
     x = np.linspace(xmin, xmax, 1000)
-    ax[0].plot(x, initial_condition(x), linewidth=1, color='k', label="init")
+    ax[0].plot(x, initial_condition(x), linewidth=1, color='k', label="Init")
+    # All the modes
+    for (t, uf, v) in sols:
+        n = len(uf)
+        label = str(n) + f", t={np.round(t, 3)}"
+        plots.smoothplot(uf, ax[0], label=label, linewidth=1)
+        plots.plot_resolution(uf, ax[1], linewidth=0.5, markersize=0.5)
+        if args.ggb:
+            label += ",ggb"
+            if sigma != filters.no_filter:
+                label += "," + args.filter
+            ax[0].plot(cgrid(n), v, label=label) 
+        elif sigma != filters.no_filter:
+            label += "," + args.filter
+            plots.smoothplot(uf, ax[0])
+        if args.show_markers:
+            ax[0].plot(cgrid(n), ifft(uf), "+", color= "red", markersize=5)
+    # Exact
+    if args.exact != None:
+        exact = np.loadtxt(args.exact).transpose()
+        ax[0].plot(exact[0] * 2 * np.pi, exact[1], 'ko', markersize=0.8, label="Exact")
 
+    ax[0].grid(visible=True)
     ax[0].legend()
+    fig.tight_layout()
     fig.savefig(plotname)
 
     plt.close()
     print("Done.")
 
+    '''
     ## Gegenbauer test
     u = u[-1]
     x = cgrid(len(u))
-#    plots.smoothplot(u, plt)
-    plt.plot(x, ifft(u).real)
+    plots.smoothplot(u, plt)
+#    plt.plot(x, ifft(u).real)
     ai = np.where(x < 3, True, False)
     y = x[ai]
     v = ifft(u)
@@ -163,3 +174,4 @@ if __name__ == '__main__':
     plt.plot(x, v.real)
 #    plots.smoothplot(fft(v), plt)
     plt.show()
+    '''

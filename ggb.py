@@ -57,7 +57,7 @@ def ip_fft(uh, n, lam, a, b):
     Cn = ggb(n, lam)
     return wip(f, Cn, lam, a, b)
 
-def expand(x, f, L):
+def recon(x, f, L):
     '''
     Expands f over the GGB polys up to degree L
     and returns evaluation at x.
@@ -71,12 +71,10 @@ def expand(x, f, L):
         m[n] = wip(f, Cn, L, a, b).real / gam(n, L) * Cn(xi(x, a, b))
     return np.sum(m, axis = 0)
 
-def expand_fft(x, uh, L):
+def recon_fft(x, uh, L):
     '''
     Expands the function (f = ifft(uh)) in terms of the Gegenbauer polys
     and return the evaluation at each x.
     '''
     f = lambda x: ifft_at(x, uh)
-    return expand(x, f, L)
-
-# TODO define a function that processes everything
+    return recon(x, f, L)
