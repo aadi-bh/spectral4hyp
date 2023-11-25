@@ -19,7 +19,7 @@ xmax = 2 * pi
 
 def saw_tooth(x):
     left = np.where(x < pi, 1, 0);
-    return x * left + (x - 2 * pi) * (1-left) / (2*pi)
+    return x * left + (x - 2 * pi) * (1-left) 
 def sin(x):
     return np.sin(x)
 def step(x):
@@ -164,7 +164,7 @@ if __name__ == '__main__':
             filter = create_filter(kk, sigma, {'p':p})
         args = (N, M, filter)
         u_hat_init = fft(initial_condition(x))
-        S_half, S = visc(dt, k, eps = 1e-2)
+        S_half, S = visc(dt, k, eps = 1e-1)
         '''
         output = solve_ivp(fun = rhs,
                              t_span = [0, tf],

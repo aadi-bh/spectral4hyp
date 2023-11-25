@@ -1,5 +1,9 @@
 import numpy as np
+from numpy import pi
 from numpy.fft import *
+
+xmin = 0
+xmax = 2 * pi
 
 def elrk4(SemiGroup,Nonlinear,y0,tinterval,dt,args):
     y = y0
@@ -95,3 +99,19 @@ def freqs(n):
 def cgrid(n, xmin=0, xmax=2*np.pi):
     dx = (xmax - xmin) / n
     return 0.5 * dx + np.arange(xmin, xmax, dx)
+
+def ifft_at(z, uh):
+    '''
+    Evaluates the given truncated fourier series
+    at each value of x
+    '''
+    N = len(uh)
+    k = freqs(N)
+    dx = (xmax-xmin)/N
+    dz = z[1] - z[0]
+    # Need to shift because the first sample was at dx/2
+    # TODO Don't completely understand that yet, but it makes sense
+    y = z - dx/2
+    xk = np.tensordot(y, k, axes = 0)
+    return np.exp(1j * xk)@uh / N
+

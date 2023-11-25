@@ -132,7 +132,7 @@ if __name__ == '__main__':
         v = u[-1]
         t = times[-1]
         n = len(v)
-        # ax[0].plot(cgrid(n), ifft(v).real, "+", color= "red", markersize=4)
+        ax[0].plot(cgrid(n), ifft(v).real, "+", color= "red", markersize=5)
         plots.smoothplot(v, ax[0], label=str(n)+f", t={np.round(t, 3)}", linewidth=1)
         plots.plot_resolution(v, ax[1], linewidth=0.5, markersize=0.5)
 

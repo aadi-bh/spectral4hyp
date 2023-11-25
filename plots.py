@@ -6,8 +6,6 @@ import os
 from common import *
 from filters import *
 
-xmin, xmax = 0, 2 * np.pi
-
 def filterplots():
     x = np.linspace(-2, 2, 100)
     fig, ax = plt.subplots(2,2, figsize=(14,8))
@@ -20,18 +18,25 @@ def filterplots():
             ax[i][j].legend()
     fig.savefig("filters.png")
 
+def ggbplots():
+    return
+    x = np.linspace(-1, 1)
+    # TODO
+
 def plot_resolution(c, ax, **kwargs):
     k = fftshift(freqs(len(c)))
     ax.semilogy(k, np.abs(fftshift(c)), **kwargs)
     return
 
-def smoothplot(v, ax,nn=2048, **plotargs):
+def smoothplot(v, ax,nn=16, **plotargs):
     n = len(v)
     w = pad(v, (nn - n)//2)
     dy = (xmax - xmin) / n
+    dz = (xmax - xmin) / nn
     y = cgrid(n)
-    z = np.linspace(y[0], y[-1]+dy, nn, endpoint=True)
+    z = np.linspace(y[0], y[-1]+dy-dz, nn, endpoint=True)
     ax.plot(z, ifft(w).real, **plotargs)
+    return z, ifft(w)
 
 def convergence_plot(exactfile, filenames, saveas, **kwargs):
     for fn in filenames:
