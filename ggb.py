@@ -1,4 +1,4 @@
-# Gegenbauer polynomials -- the Gibbs complimentary basis to Fourier
+# Gegenbauer polynomials -- a Gibbs complementary basis to Fourier
 
 import numpy as np
 from scipy.special import gegenbauer as ggb
@@ -38,22 +38,45 @@ def gam(n, lam):
     r /= gamma(lam) * gamma(2 * lam) * factorial(n) * (n+lam)
     return r
 
-def ip(uh, n, lam, a, b):
-    z, wts = np.polynomial.legendre.leggauss(10*n+200);
+'''
+Weighted inner product over [a,b]
+#### f must be function of x\in[ a, b],
+#### g must be function of z\in[-1, 1].
+'''
+def wip(f, g, lam, a, b):
+    z, wts = np.polynomial.legendre.leggauss(10*lam + 200)
     x = xi_inv(z, a, b)
-    fx = ifft_at(x, uh).real
-    Cz = C(z, n, lam)
+    fx = f(x)
+    gz = g(z)
     wz = w(z, lam)
-    return np.sum(wts * fx * Cz * wz)
+    return np.sum(wts * fx * gz * wz)
 
-x = np.linspace(0, 2*pi, 16)
-u = np.ones(x.shape)
-uh = fft(u)
-print(ip(uh, 0, 1, 1,2) / gam(0, 1))
-print(ip(uh, 1, 1, 1,2) / gam(1, 1))
-print(ip(uh, 2, 1, 1,2) / gam(2, 1))
-print(ip(uh, 3, 1, 1,2) / gam(3, 1))
-print(ip(uh, 4, 1, 1,2) / gam(4, 1))
-# TODO
-# Expand it in terms of the ggbs
-# Patch it back into the solution.
+def ip_fft(uh, n, lam, a, b):
+    # f should be a function of x, g must be a function of z
+    f = lambda x: ifft_at(x, uh)
+    Cn = ggb(n, lam)
+    return wip(f, Cn, lam, a, b)
+
+def expand(x, f, L):
+    '''
+    Expands f over the GGB polys up to degree L
+    and returns evaluation at x.
+    '''
+    degs = np.arange(0, L+1)
+    a = x[0]
+    b = x[-1]
+    m = np.empty((len(degs), len(x)))
+    for n in degs:
+        Cn = ggb(n, L)
+        m[n] = wip(f, Cn, L, a, b).real / gam(n, L) * Cn(xi(x, a, b))
+    return np.sum(m, axis = 0)
+
+def expand_fft(x, uh, L):
+    '''
+    Expands the function (f = ifft(uh)) in terms of the Gegenbauer polys
+    and return the evaluation at each x.
+    '''
+    f = lambda x: ifft_at(x, uh)
+    return expand(x, f, L)
+
+# TODO define a function that processes everything

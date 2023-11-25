@@ -14,6 +14,7 @@ import ic
 import op
 import filters
 import plots
+import ggb
 
 
 xmin, xmax = 0, 2 * pi
@@ -32,8 +33,11 @@ parser.add_argument('--pde', choices=('linadv', 'burgers'), default='burgers')
 parser.add_argument('--add_visc', type=bool, default=False)
 parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos'), default='no_filter')
 parser.add_argument('--filterp', type=int, default=1)
+parser.add_argument('---ggb', type=bool, default=False)
+parser.add_argument('--ggbL', type=int, default=5)
 parser.add_argument('--max_lgN', type=int, default=7)
-parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
+#parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
+parser.add_argument('--show_markers', type=bool, default=False)
 args = parser.parse_args()
 
 if __name__ == '__main__':
@@ -67,6 +71,7 @@ if __name__ == '__main__':
         visc = op.semigroup_heat
     tf = max(0, args.Tf)
     cfl = min(1, args.cfl)
+    show_markers = args.show_markers
 
     print("PDE   :", args.pde)
     print("TF    :", tf)
@@ -132,7 +137,8 @@ if __name__ == '__main__':
         v = u[-1]
         t = times[-1]
         n = len(v)
-        ax[0].plot(cgrid(n), ifft(v).real, "+", color= "red", markersize=5)
+        if show_markers:
+            ax[0].plot(cgrid(n), ifft(v).real, "+", color= "red", markersize=5)
         plots.smoothplot(v, ax[0], label=str(n)+f", t={np.round(t, 3)}", linewidth=1)
         plots.plot_resolution(v, ax[1], linewidth=0.5, markersize=0.5)
 
@@ -144,3 +150,16 @@ if __name__ == '__main__':
 
     plt.close()
     print("Done.")
+
+    ## Gegenbauer test
+    u = u[-1]
+    x = cgrid(len(u))
+#    plots.smoothplot(u, plt)
+    plt.plot(x, ifft(u).real)
+    ai = np.where(x < 3, True, False)
+    y = x[ai]
+    v = ifft(u)
+    v[ai] = ggb.expand_fft(y, u, 3)
+    plt.plot(x, v.real)
+#    plots.smoothplot(fft(v), plt)
+    plt.show()

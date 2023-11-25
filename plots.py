@@ -28,7 +28,7 @@ def plot_resolution(c, ax, **kwargs):
     ax.semilogy(k, np.abs(fftshift(c)), **kwargs)
     return
 
-def smoothplot(v, ax,nn=16, **plotargs):
+def smoothplot(v, ax,nn=2048, **plotargs):
     n = len(v)
     w = pad(v, (nn - n)//2)
     dy = (xmax - xmin) / n
