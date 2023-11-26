@@ -1,6 +1,7 @@
 # Make plots
 
 import matplotlib.pyplot as plt
+from argparse import Namespace
 import numpy as np
 import os
 from common import *
@@ -21,16 +22,19 @@ def filterplots():
             ax[i][j].grid()
     fig.savefig("filters.svg")
 
+# Plot all the ggb polys
 def ggbplots():
     return
     x = np.linspace(-1, 1)
     # TODO
 
+# Plot the resolution of the given FFT
 def plot_resolution(c, ax, **kwargs):
     k = fftshift(freqs(len(c)))
     ax.semilogy(k, np.abs(fftshift(c)), **kwargs)
     return
 
+# Fourier interpolate the IFFT
 def smoothplot(v, ax,nn=2048, **plotargs):
     n = len(v)
     w = pad(v, (nn - n)//2)
@@ -67,7 +71,47 @@ def convergence_plot(exactfile, filenames, saveas, **kwargs):
     ax[0].legend()
     fig.savefig(saveas)
 
+def solplot(sols, args, plotname):
+    return
+    nn = 2048
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[3,1])
+    # Initial
+    x = np.linspace(xmin, xmax, 1000)
+    ax[0].plot(x, initial_condition(x), linewidth=1, color='k', label="Init")
+    # All the modes
+    for (t, uf, v) in sols:
+        n = len(uf)
+        label = str(n) + f", t={np.round(t, 3)}"
+        plots.smoothplot(uf, ax[0], label=label, linewidth=1)
+        plots.plot_resolution(uf, ax[1], linewidth=0.5, markersize=0.5)
+        if args.ggb:
+            label += ",ggb"
+            if sigma != filters.no_filter:
+                label += "," + args.filter
+            ax[0].plot(cgrid(n), v, label=label) 
+        elif sigma != filters.no_filter:
+            label += "," + args.filter
+            plots.smoothplot(uf, ax[0])
+        if args.show_markers:
+            ax[0].plot(cgrid(n), ifft(uf), "+", color= "red", markersize=5)
+    # Exact
+    if args.exact != None:
+        exact = np.loadtxt(args.exact).transpose()
+        ax[0].plot(exact[0] * 2 * np.pi, exact[1], 'ko', markersize=0.8, label="Exact")
+
+    ax[0].grid(visible=True)
+    ax[0].legend()
+    fig.tight_layout()
+    fig.savefig(plotname)
+    plt.close()
+    print("Saved plot to "+plotname)
 # convergence_plot('a', ['16.txt', '32.txt', '64.txt'])
 if __name__ == "__main__":
     filterplots()
+    initial_condition = ic.sin
+    args = Namespace(L=3, N=[16, 64], Tf=1.0, cfl=0.1, exact=None, filter='no_filter', ggb=False, ic='sin', pde='burgers', show_markers=False)
+    sols, prefix, _ = main.run(args)
+#    prefix = 'burgers-1.0-sin-no_filter-gFalse'
+#    sols = [np.loadtxt(file) for file in [prefix+'-16.txt', prefix+'-64']]
+    solplot(sol, args, initial_condition, prefix+'.svg')
 

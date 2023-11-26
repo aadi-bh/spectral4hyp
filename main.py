@@ -17,31 +17,8 @@ import plots
 import ggb
 
 
-xmin, xmax = 0, 2 * pi
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-N', type=int, help='Number of cells', action='append')
-parser.add_argument('--cfl', type=float, help='CFL number', default=0.1)
-# parser.add_argument('-scheme',
-#                     choices=('C','LF','GLF','LLF','LW','ROE','EROE','GOD'),
-#                     help='Scheme', default='LF')
-parser.add_argument('--ic',
-                    choices=('saw_tooth','sin','step', 'bump'),
-                    default='sin', help = "Initial condition")
-parser.add_argument('--Tf', type=float, default=1.0, help = "Final time")
-parser.add_argument('--pde', choices=('linadv', 'burgers'), default='burgers', help = "PDE to solve")
-# parser.add_argument('--add_visc', type=bool, default=False)
-parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos'), default='no_filter', help = "Which filter, if any")
-# parser.add_argument('--filterp', type=int, default=1, "p value for the exponential")
-parser.add_argument('--ggb', type=bool, default=False, help = "Whether to reconstruct the analytic part of the solution")
-parser.add_argument('-L', type=int, default=3, help = "Number of elements in the GGB basis")
-# parser.add_argument('--max_lgN', type=int, default=7, help = "Largest power of 2 to calculate until")
-#parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
-parser.add_argument('--show_markers', type=bool, default=False, help = "Show the original sample values in red crosses")
-parser.add_argument('--exact', type=str, default=None, help = "Exact solution file")
-args = parser.parse_args()
-
-if __name__ == '__main__':
+def run(args):
     rhs = op.linadv
     initial_condition = ic.sin
 #    visc = op.semigroup_none
@@ -73,15 +50,15 @@ if __name__ == '__main__':
     tf  = max(0, args.Tf)
     cfl = min(1, args.cfl)
 
-    plotname = f"{args.pde}-{tf}-{args.ic}-{args.filter}-g{args.ggb}.png"
+    prefix = f"{args.pde}-{tf}-{args.ic}-{args.filter}-g{args.ggb}"
     print("PDE   :", args.pde)
     print("TF    :", tf)
     print("CFL   :", cfl)
     print("IC    :", args.ic)
     print("FILTER:", args.filter)
-    print("FILE  :", plotname)
+    print("PREFIX:", prefix)
+    print(args)
 #    print("VISC  :", args.add_visc)
-#    plotname = f"{args.pde}-visc{str(args.add_visc)}-{tf}-{args.ic}-{args.filter}.png"
     sols = []
     for N in args.N:
         M = 3 * N // 2;
@@ -98,6 +75,7 @@ if __name__ == '__main__':
 
         times = [0]
         us = [u_hat_init]
+        print(tf)
         if (tf > 0):
             output = solve_ivp(fun = rhs,
                              t_span = [0, tf],
@@ -121,29 +99,60 @@ if __name__ == '__main__':
             ggbright = ggb.recon_fft(x[right], uf, args.L)
             v[left] = ggbleft
             v[right] = ggbright
-        sols.append((times[-1], uf, v))
-        filename = f"{N}.txt"
-        np.savetxt(filename, np.vstack((x, us[-1], v)))
+        sols.append((times[-1], us[0], uf, v))
+        filename = prefix+f"-{N}.txt"
+        np.savetxt(filename, np.vstack((x, us[0], uf, v)))
         print("Saved solution to " + filename)
+    return sols, prefix, initial_condition
 
-    # PLOT
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-N', type=int, help='Number of cells', action='append', default=None)
+    parser.add_argument('--cfl', type=float, help='CFL number', default=0.1)
+    # parser.add_argument('-scheme',
+    #                     choices=('C','LF','GLF','LLF','LW','ROE','EROE','GOD'),
+    #                     help='Scheme', default='LF')
+    parser.add_argument('--ic',
+                        choices=('saw_tooth','sin','step', 'bump'),
+                        default='sin', help = "Initial condition")
+    parser.add_argument('--Tf', type=float, default=1.0, help = "Final time")
+    parser.add_argument('--pde', choices=('linadv', 'burgers'), default='burgers', help = "PDE to solve")
+    # parser.add_argument('--add_visc', type=bool, default=False)
+    parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos'), 
+                        default='no_filter', help = "Which filter, if any")
+    # parser.add_argument('--filterp', type=int, default=1, "p value for the exponential")
+    parser.add_argument('--ggb', type=bool, default=False, 
+                        help = "Whether to reconstruct the analytic part of the solution")
+    parser.add_argument('-L', type=int, default=3, help = "Number of elements in the GGB basis")
+    # parser.add_argument('--max_lgN', type=int, default=7, help = "Largest power of 2 to calculate until")
+    #parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
+    parser.add_argument('--show_markers', type=bool, default=False, 
+                        help = "Show the original sample values in red crosses")
+    parser.add_argument('--exact', type=str, default=None, help = "Exact solution file")
+    args = parser.parse_args()
+    if args.N == None:
+        args.N = [16, 64]
+    sols, prefix, initial_condition = run(args)
+    plotname = prefix+'.svg'
+
+    # PLOT!
     nn = 2048
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[3,1])
     # Initial
     x = np.linspace(xmin, xmax, 1000)
     ax[0].plot(x, initial_condition(x), linewidth=1, color='k', label="Init")
     # All the modes
-    for (t, uf, v) in sols:
+    for (t, uhinit, uf, v) in sols:
         n = len(uf)
         label = str(n) + f", t={np.round(t, 3)}"
         plots.smoothplot(uf, ax[0], label=label, linewidth=1)
         plots.plot_resolution(uf, ax[1], linewidth=0.5, markersize=0.5)
         if args.ggb:
             label += ",ggb"
-            if sigma != filters.no_filter:
+            if args.filter != 'no_filter':
                 label += "," + args.filter
             ax[0].plot(cgrid(n), v, label=label) 
-        elif sigma != filters.no_filter:
+        elif args.filter != 'no_filter':
             label += "," + args.filter
             plots.smoothplot(uf, ax[0])
         if args.show_markers:
@@ -157,21 +166,5 @@ if __name__ == '__main__':
     ax[0].legend()
     fig.tight_layout()
     fig.savefig(plotname)
-
     plt.close()
-    print("Done.")
-
-    '''
-    ## Gegenbauer test
-    u = u[-1]
-    x = cgrid(len(u))
-    plots.smoothplot(u, plt)
-#    plt.plot(x, ifft(u).real)
-    ai = np.where(x < 3, True, False)
-    y = x[ai]
-    v = ifft(u)
-    v[ai] = ggb.expand_fft(y, u, 3)
-    plt.plot(x, v.real)
-#    plots.smoothplot(fft(v), plt)
-    plt.show()
-    '''
+    print("Saved plot to "+plotname)
