@@ -6,6 +6,8 @@ import os
 from common import *
 from filters import *
 
+# plt.style.use('fivethirtyeight')
+plt.style.use('./presentation.mplstyle')
 def filterplots():
     x = np.linspace(-2, 2, 100)
     fig, ax = plt.subplots(2,2, figsize=(14,8))
@@ -16,7 +18,8 @@ def filterplots():
     for i in range(2):
         for j in range(2):
             ax[i][j].legend()
-    fig.savefig("filters.png")
+            ax[i][j].grid()
+    fig.savefig("filters.svg")
 
 def ggbplots():
     return
