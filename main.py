@@ -54,7 +54,7 @@ def run(args):
 
     prefix = f"{args.pde}-{tf}-{args.ic}-{args.filter}-g"
     if args.ggb:
-        prefix += str(args.ggblambda)
+        prefix += str(args.Lambda)
     else:
         prefix += "False"
 
@@ -101,8 +101,9 @@ def run(args):
             # Conveniently for us, the shock stays put at pi
             left = np.where(x < pi, True, False)
             right = np.where(x > pi, True, False)
-            ggbleft = ggb.recon_fft(x[left], uf, args.ggblambda)
-            ggbright = ggb.recon_fft(x[right], uf, args.ggblambda)
+            lam = args.Lambda
+            ggbleft = ggb.recon_fft(x[left], uf, lam)
+            ggbright = ggb.recon_fft(x[right], uf, lam)
             v[left] = ggbleft
             v[right] = ggbright
         sols.append((times[-1], us[0], uf, v))
@@ -126,10 +127,9 @@ if __name__ == '__main__':
     # parser.add_argument('--add_visc', type=bool, default=False)
     parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos', 'cutoff'), default='no_filter', help = "Which filter, if any")
     # parser.add_argument('--filterp', type=int, default=1, "p value for the exponential")
+    parser.add_argument('--Lambda', default=3, type=int, help = "Number of terms in the GGB re-expansion")
     parser.add_argument('--ggb', action='store_true', default=False,
                         help = "Whether to reconstruct the analytic part of the solution")
-    parser.add_argument('---ggblambda', type=int, default=3, help = "Number of elements in the GGB basis")
-    # parser.add_argument('--max_lgN', type=int, default=7, help = "Largest power of 2 to calculate until")
     #parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
     parser.add_argument('--show_markers',default=False, action='store_true',
                         help = "Show the original sample values in red crosses")
@@ -160,21 +160,18 @@ if __name__ == '__main__':
         n = len(uf)
         x = cgrid(n)
         label = str(n) + f", t={np.round(t, 3)}"
+        if args.filter != 'no_filter':
+            label += ',' + args.filter
+        plots.smooth_and_error(ax[0], ax[1], uf, exact, label=label)
         if args.ggb:
-            label += ",ggb"
-            if args.filter != 'no_filter':
-                label += "," + args.filter
-            plots.plot_and_error(ax[0], ax[1], x, v, exact, label=label)
-        elif args.filter != 'no_filter':
-            label += "," + args.filter
-            plots.smooth_and_error(ax[0], ax[1], uf, exact, label=label)
-        else:
-            # So no filter, no ggb
-#            plots.smoothplot(uf, ax[0], label=label)
-            plots.smooth_and_error(ax[0], ax[1], uf, exact, label=label)
+            plots.plot_and_error(ax[0], ax[1], x, v, exact, label=label+',ggb')
         if args.show_markers:
             ax[0].plot(cgrid(n), ifft(uf), "+", color= "red", markersize=5)
     ax[0].grid(visible=True)
+    ax[0].set_xlabel("$x$")
+    ax[0].set_ylabel("$y$")
+    ax[1].set_xlabel("$x$")
+    ax[1].set_ylabel("$|y-y_{exact}|$")
     ax[0].legend()
     ax[1].legend()
     fig.tight_layout()

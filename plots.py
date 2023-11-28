@@ -24,9 +24,15 @@ def filterplots():
 
 # Plot all the ggb polys
 def ggbplots():
-    return
-    x = np.linspace(-1, 1)
-    # TODO
+    import ggb
+    x = np.linspace(-1, 1, 2048)
+    fig, ax = plt.subplots(figsize=(14,8))
+    l = 3
+    ax.set_ylim((-20, 20))
+    for n in range(5):
+        ax.plot(x, ggb.C(x, n, l), label=f"$k={n}$")
+    ax.legend()
+    fig.savefig('ggbs.svg')
 
 # Plot the resolution of the given FFT
 def plot_resolution(c, ax, **kwargs):
@@ -74,7 +80,7 @@ def plot_and_error(solax, errax, x, u, exact, **plotargs):
         errax.semilogy(x, np.abs(u-ei), **plotargs)
     elif (len(x) < len(exact[0])):
         ui = np.interp(exact[0], x, u)
-        errax.semilogy(exact[0], np.abs(u-ei), **plotargs)
+        errax.semilogy(exact[0], np.abs(ui-exact[1]), **plotargs)
     else:
         errax.semilogy(x, np.abs(u-exact[1]), **plotargs)
 
@@ -141,11 +147,14 @@ def solplot(sols, args, plotname):
     print("Saved plot to "+plotname)
 # convergence_plot('a', ['16.txt', '32.txt', '64.txt'])
 if __name__ == "__main__":
+    ggbplots()
     filterplots()
+    '''
     initial_condition = ic.sin
     args = Namespace(L=3, N=[16, 64], Tf=1.0, cfl=0.1, exact=None, filter='no_filter', ggb=False, ic='sin', pde='burgers', show_markers=False)
     sols, prefix, _ = main.run(args)
 #    prefix = 'burgers-1.0-sin-no_filter-gFalse'
 #    sols = [np.loadtxt(file) for file in [prefix+'-16.txt', prefix+'-64']]
     solplot(sol, args, initial_condition, prefix+'.svg')
+    '''
 
