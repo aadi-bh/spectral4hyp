@@ -71,12 +71,12 @@ def plot_and_error(solax, errax, x, u, exact, **plotargs):
         return
     if len(x) > len(exact[0]):
         ei = np.interp(x, exact[0], exact[1])
-        errax.plot(x, np.abs(u-ei), **plotargs)
+        errax.semilogy(x, np.abs(u-ei), **plotargs)
     elif (len(x) < len(exact[0])):
         ui = np.interp(exact[0], x, u)
-        errax.plot(exact[0], np.abs(u-ei), **plotargs)
+        errax.semilogy(exact[0], np.abs(u-ei), **plotargs)
     else:
-        errax.plot(x, np.abs(u-exact[1]), **plotargs)
+        errax.semilogy(x, np.abs(u-exact[1]), **plotargs)
 
 
 def convergence_plot(exactfile, filenames, saveas, **kwargs):
