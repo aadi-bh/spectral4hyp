@@ -34,6 +34,19 @@ def plot_resolution(c, ax, **kwargs):
     ax.semilogy(k, np.abs(fftshift(c)), **kwargs)
     return
 
+def plot_error_fft(uh, exact, ax, **kwargs):
+    x = exact[0]
+    if len(uh) < len(x):
+        u = ifft_at(x, uh)
+        e = np.abs(u - exact[1])
+        ax[1].plot(x, e, **kwargs)
+    else:
+        print("WARNING: Interpolating exact not supported yet.\nSupply exact solution on finer grid.")
+        return
+
+def plot_error(c, exact, ax, **kwargs):
+    print("print_error not implemented yet.")
+
 # Fourier interpolate the IFFT
 def smoothplot(v, ax,nn=2048, **plotargs):
     n = len(v)
