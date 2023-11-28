@@ -35,6 +35,8 @@ def run(args):
         initial_condition = ic.step
     elif args.ic == 'bump':
         initial_condition = ic.bump
+    elif args.ic == 'triangle':
+        initial_condition = ic.triangle
     if args.filter == 'no_filter':
         sigma = filters.no_filter;
     elif args.filter == 'exponential':
@@ -120,7 +122,7 @@ if __name__ == '__main__':
     #                     choices=('C','LF','GLF','LLF','LW','ROE','EROE','GOD'),
     #                     help='Scheme', default='LF')
     parser.add_argument('--ic',
-                        choices=('saw_tooth','sin','step', 'bump'),
+                        choices=('saw_tooth','sin','step', 'bump', 'triangle'),
                         default='sin', help = "Initial condition")
     parser.add_argument('--Tf', type=float, default=1.0, help = "Final time")
     parser.add_argument('--pde', choices=('linadv', 'burgers'), default='burgers', help = "PDE to solve")

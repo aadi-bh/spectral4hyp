@@ -6,6 +6,10 @@ def saw_tooth(x):
     left = np.where(x < pi, 1, 0);
     return x * left + (x - 2 * pi) * (1-left)
 
+def triangle(x):
+    left = np.where(x < pi, 1, 0);
+    return x * left + (2 * pi - x) * (1-left)
+
 def sin(x):
     return np.sin(x)
 

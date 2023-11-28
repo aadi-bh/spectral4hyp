@@ -83,6 +83,7 @@ def plot_and_error(solax, errax, x, u, exact, **plotargs):
         errax.semilogy(exact[0], np.abs(ui-exact[1]), **plotargs)
     else:
         errax.semilogy(x, np.abs(u-exact[1]), **plotargs)
+    errax.set_ylim((1e-6, 1e1))
 
 
 def convergence_plot(exactfile, filenames, saveas, **kwargs):
