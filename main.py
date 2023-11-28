@@ -121,12 +121,12 @@ if __name__ == '__main__':
     parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos'), 
                         default='no_filter', help = "Which filter, if any")
     # parser.add_argument('--filterp', type=int, default=1, "p value for the exponential")
-    parser.add_argument('--ggb', type=bool, default=False, 
+    parser.add_argument('--ggb', type=bool, default=False, action='store_true'
                         help = "Whether to reconstruct the analytic part of the solution")
     parser.add_argument('-L', type=int, default=3, help = "Number of elements in the GGB basis")
     # parser.add_argument('--max_lgN', type=int, default=7, help = "Largest power of 2 to calculate until")
     #parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
-    parser.add_argument('--show_markers', type=bool, default=False, 
+    parser.add_argument('--show_markers', type=bool, default=False, action='store_true'
                         help = "Show the original sample values in red crosses")
     parser.add_argument('--exact', type=str, default=None, help = "Exact solution file")
     args = parser.parse_args()
