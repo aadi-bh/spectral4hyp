@@ -45,6 +45,8 @@ def run(args):
         sigma = filters.raisedcos
     elif args.filter == 'lanczos':
         sigma = filters.lanczos
+    elif args.filter == 'cutoff':
+        sigma = filters.cutoff
 #    if args.add_visc == True:
 #        visc = op.semigroup_heat
     tf  = max(0, args.Tf)
@@ -122,7 +124,7 @@ if __name__ == '__main__':
     parser.add_argument('--Tf', type=float, default=1.0, help = "Final time")
     parser.add_argument('--pde', choices=('linadv', 'burgers'), default='burgers', help = "PDE to solve")
     # parser.add_argument('--add_visc', type=bool, default=False)
-    parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos'), default='no_filter', help = "Which filter, if any")
+    parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos', 'cutoff'), default='no_filter', help = "Which filter, if any")
     # parser.add_argument('--filterp', type=int, default=1, "p value for the exponential")
     parser.add_argument('--ggb', action='store_true', default=False,
                         help = "Whether to reconstruct the analytic part of the solution")
@@ -131,7 +133,7 @@ if __name__ == '__main__':
     #parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
     parser.add_argument('--show_markers',default=False, action='store_true',
                         help = "Show the original sample values in red crosses")
-    parser.add_argument('--exact', type=str, default=None, help = "Exact solution file")
+    parser.add_argument('--exact', type=str, default='init', help = "Exact solution file. Set to 'init' to use initial condition as final")
     args = parser.parse_args()
     if args.N == None:
         args.N = [16, 64, 128]

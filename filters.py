@@ -22,6 +22,9 @@ def lanczos(eta, **kwargs):
 def no_filter(eta, **kwargs):
     return np.ones(len(eta))
 
+def cutoff(eta, **kwargs):
+    return np.where(np.abs(eta > 0.5), 0, 1)
+
 def apply_filter(u, sigma, **args):
     N = len(u)
     k = freqs(N)
