@@ -58,6 +58,27 @@ def smoothplot(v, ax,nn=2048, **plotargs):
     ax.plot(z, ifft(w).real, **plotargs)
     return z, ifft(w)
 
+def smooth_and_error(solax, errax, v, exact, nn=2048, **plotargs):
+    if np.any(exact == None):
+        print("Exact not found.")
+        return smoothplot(v, solax, **plotargs)
+    plot_and_error(solax, errax, exact[0], ifft_at(exact[0], v).real, exact, **plotargs)
+
+def plot_and_error(solax, errax, x, u, exact, **plotargs):
+    solax.plot(x, u, **plotargs)
+    if np.any(exact == None):
+        print("Exact not found.")
+        return
+    if len(x) > len(exact[0]):
+        ei = np.interp(x, exact[0], exact[1])
+        errax.plot(x, np.abs(u-ei), **plotargs)
+    elif (len(x) < len(exact[0])):
+        ui = np.interp(exact[0], x, u)
+        errax.plot(exact[0], np.abs(u-ei), **plotargs)
+    else:
+        errax.plot(x, np.abs(u-exact[1]), **plotargs)
+
+
 def convergence_plot(exactfile, filenames, saveas, **kwargs):
     for fn in filenames:
         if not os.path.isfile(fn):

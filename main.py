@@ -140,36 +140,41 @@ if __name__ == '__main__':
 
     # PLOT!
     nn = 2048
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[3,1])
-    # Exact
-    if args.exact != None:
-        exact = np.loadtxt(args.exact).transpose()
-        exact[0] *= 2 * pi
-        ax[0].plot(exact[0], exact[1], 'ko', markersize=0.8, label="Exact")
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize = (14, 8), width_ratios=[2.5,1])
     # Initial
     x = np.linspace(xmin, xmax, 1000)
     ax[0].plot(x, initial_condition(x), linewidth=1, color='k', label="Init")
+    # Exact
+    exact = None
+    if args.exact != None:
+        if args.exact == "init":
+            exact = np.vstack((x,initial_condition(x)))
+        else:
+            exact = np.loadtxt(args.exact).transpose()
+            exact[0] *= 2 * pi
+            ax[0].plot(exact[0], exact[1], 'ko', markersize=0.8, label="Exact")
     # All the modes
     for (t, uhinit, uf, v) in sols:
         n = len(uf)
+        x = cgrid(n)
         label = str(n) + f", t={np.round(t, 3)}"
-    #    plots.smoothplot(uf, ax[0], label=label)
         if args.ggb:
             label += ",ggb"
             if args.filter != 'no_filter':
                 label += "," + args.filter
-            ax[0].plot(cgrid(n), v, label=label) 
+            plots.plot_and_error(ax[0], ax[1], x, v, exact, label=label)
         elif args.filter != 'no_filter':
             label += "," + args.filter
-            plots.smoothplot(uf, ax[0], label=label)
+            plots.smooth_and_error(ax[0], ax[1], uf, exact, label=label)
         else:
             # So no filter, no ggb
-            plots.smoothplot(uf, ax[0], label=label)
+#            plots.smoothplot(uf, ax[0], label=label)
+            plots.smooth_and_error(ax[0], ax[1], uf, exact, label=label)
         if args.show_markers:
             ax[0].plot(cgrid(n), ifft(uf), "+", color= "red", markersize=5)
-
     ax[0].grid(visible=True)
     ax[0].legend()
+    ax[1].legend()
     fig.tight_layout()
     fig.savefig(plotname)
     print("Saved plot to "+plotname)
