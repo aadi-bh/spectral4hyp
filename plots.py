@@ -147,7 +147,28 @@ def solplot(sols, args, plotname):
     plt.close()
     print("Saved plot to "+plotname)
 # convergence_plot('a', ['16.txt', '32.txt', '64.txt'])
+
+def aliasing_plots():
+    N = 3
+    n = 1
+    x = np.linspace(0, 2*np.pi, N+1)
+    xx = np.linspace(0, 2*np.pi, 1000)
+
+    y1 = np.sin(n*xx)
+    y2 = np.sin((n+2*N)*xx)
+    y3 = np.sin(n*x)
+
+    fig, ax =  plt.subplots(figsize=(14,8))
+    ax.plot(xx, y1, label=f"$\sin({n}x)$")
+    ax.plot(xx, y2, label=f"$\sin({n+2*N}x)$")
+    ax.plot(x, y3, ls="None", marker='o', markersize=25, alpha=0.5)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig('aliasing.svg')
+    plt.close()
+
 if __name__ == "__main__":
+    aliasing_plots()
     ggbplots()
     filterplots()
     '''

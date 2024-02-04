@@ -69,7 +69,7 @@ def run(args):
     print(args)
 #    print("VISC  :", args.add_visc)
     sols = []
-    for N in args.N:
+    for N, lam in zip(args.N, args.Lambda):
         M = 3 * N // 2;
         m = M // 2;
         NN = (2 * m) + N
@@ -103,7 +103,6 @@ def run(args):
             # Conveniently for us, the shock stays put at pi
             left = np.where(x < pi, True, False)
             right = np.where(x > pi, True, False)
-            lam = args.Lambda
             ggbleft = ggb.recon_fft(x[left], uf, lam)
             ggbright = ggb.recon_fft(x[right], uf, lam)
             v[left] = ggbleft
@@ -129,7 +128,7 @@ if __name__ == '__main__':
     # parser.add_argument('--add_visc', type=bool, default=False)
     parser.add_argument('--filter', choices=('no_filter', 'exponential', 'cesaro', 'raisedcos', 'lanczos', 'cutoff'), default='no_filter', help = "Which filter, if any")
     # parser.add_argument('--filterp', type=int, default=1, "p value for the exponential")
-    parser.add_argument('--Lambda', default=3, type=int, help = "Number of terms in the GGB re-expansion")
+    parser.add_argument('--Lambda', type=int, action='append', default=None, help = "Number of terms in the GGB re-expansion")
     parser.add_argument('--ggb', action='store_true', default=False,
                         help = "Whether to reconstruct the analytic part of the solution")
     #parser.add_argument('--integrator', choices=('solve_ivp', 'elrk4'), default='elrk4')
@@ -139,6 +138,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.N == None:
         args.N = [16, 64, 128]
+    if args.Lambda == None:
+        args.Lambda = [3, 6, 8]
     sols, prefix, initial_condition = run(args)
     plotname = prefix+'.svg'
 
@@ -174,6 +175,7 @@ if __name__ == '__main__':
     ax[0].set_ylabel("$y$")
     ax[1].set_xlabel("$x$")
     ax[1].set_ylabel("$|y-y_{exact}|$")
+    ax[1].set_ylim([1e-7, 1])
     ax[0].legend()
     ax[1].legend()
     fig.tight_layout()
