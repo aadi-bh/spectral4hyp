@@ -149,9 +149,9 @@ def solplot(sols, args, plotname):
 # convergence_plot('a', ['16.txt', '32.txt', '64.txt'])
 
 def aliasing_plots():
-    N = 3
+    N = 4
     n = 1
-    x = np.linspace(0, 2*np.pi, N+1)
+    x = np.arange(0, 2*np.pi, 2 * np.pi / N)
     xx = np.linspace(0, 2*np.pi, 1000)
 
     y1 = np.sin(n*xx)
