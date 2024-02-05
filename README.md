@@ -24,8 +24,8 @@ will show the list of options.
 | `-N` | Number of grid points and Fourier modes (can be used multiple times) |
 | `--pde` | Whether to solve the linear advection or Burgers' equation |
 | `--ggb` | Plot the re-expansion of Fourier coefficients in the basis of Gegenbauer polynomials |
-| `--Lambda` | The value of Lambda (sometimes referred to with alpha) for the Gegenbauer polynomials | 
-| `--exact` | Path to the file containing the exact solution for the specified combination of PDE, initial condition, and final time. |
+| `--Lambda` | When `--ggb` is enabled, the value of Lambda to use (sometimes referred to as alpha) for the Gegenbauer polynomials. Must be used as many times as `-N`.| 
+| `--exact` | Path to the file containing the exact solution for the specified combination of PDE, initial condition, at final time. |
 
 ## Known issues
 The Burgers' equation computes the right solution, but at a wrong speed.
